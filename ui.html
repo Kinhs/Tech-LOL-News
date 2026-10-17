@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tech News</title>
+<style>
+:root {
+  --bg: #f6f7f9; --card: #fff; --text: #1a1d21; --muted: #667085; --line: #e3e6eb;
+  --accent: #2563eb; --accent-bg: #e8effd; --star: #e0a100;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #111317; --card: #1a1d23; --text: #e6e8ec; --muted: #9aa3b2; --line: #2a2f38; --accent: #6ea0ff; --accent-bg: #1d2a47; --star: #f5c542; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, sans-serif; }
+header { position: sticky; top: 0; z-index: 5; background: var(--card); border-bottom: 1px solid var(--line); padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+header h1 { font-size: 17px; margin: 0 6px 0 0; }
+input[type=search], select { background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; font: inherit; }
+input[type=search] { flex: 1 1 200px; min-width: 0; }
+button { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button[aria-pressed=true] { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+.nav { color: var(--accent); text-decoration: none; font-size: 14px; }
+#status { color: var(--muted); font-size: 13px; }
+.spin { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: s .7s linear infinite; vertical-align: -2px; margin-right: 6px; }
+@keyframes s { to { transform: rotate(360deg); } }
+.layout { display: grid; grid-template-columns: 240px 1fr; gap: 20px; max-width: 1100px; margin: 0 auto; padding: 16px; }
+.layout > * { min-width: 0; }
+aside { position: sticky; top: 70px; align-self: start; max-height: calc(100vh - 90px); overflow-y: auto; }
+aside h2, .day { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 14px 0 6px; }
+#topics { display: flex; flex-direction: column; gap: 3px; }
+.topic { display: flex; justify-content: space-between; text-align: left; border-color: transparent; background: none; padding: 5px 9px; }
+.topic span { color: var(--muted); font-size: 13px; }
+.topic[aria-pressed=true] span { color: inherit; }
+#source { width: 100%; }
+article { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; position: relative; }
+article.read { opacity: .55; }
+.meta { color: var(--muted); font-size: 12.5px; display: flex; align-items: center; gap: 6px; }
+.fav { width: 16px; height: 16px; border-radius: 3px; flex: none; object-fit: contain; }
+span.fav { background: var(--accent-bg); color: var(--accent); font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; }
+.title { display: block; margin: 3px 34px 4px 0; font-weight: 600; font-size: 16px; color: var(--text); text-decoration: none; }
+.title:hover { color: var(--accent); }
+.snip { margin: 0 0 8px; color: var(--muted); font-size: 14px; }
+.chip { font-size: 12px; padding: 2px 8px; border-radius: 99px; margin-right: 5px; background: var(--accent-bg); color: var(--accent); border-color: transparent; }
+.star { position: absolute; top: 8px; right: 8px; border: none; background: none; font-size: 20px; padding: 2px 6px; color: var(--muted); }
+.star[aria-pressed=true] { color: var(--star); background: none; }
+#empty, #more { text-align: center; color: var(--muted); padding: 30px 0; }
+#more button { margin-top: 6px; }
+@media (max-width: 760px) {
+  .layout { grid-template-columns: 1fr; padding: 12px 16px; gap: 6px; }
+  aside { position: static; max-height: none; overflow: visible; }
+  aside h2 { display: none; }
+  #topics { flex-direction: row; overflow-x: auto; padding-bottom: 6px; }
+  .topic { flex: none; gap: 6px; border: 1px solid var(--line); border-radius: 99px; }
+  #source { margin-top: 6px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Tech News</h1>
+  <a class="nav" href="/lol">League ›</a>
+  <input id="q" type="search" placeholder="Search ( / )" aria-label="Search">
+  <select id="days" aria-label="Time range">
+    <option value="1">Last 24h</option><option value="3">3 days</option><option value="7">7 days</option><option value="30">30 days</option>
+  </select>
+  <button id="unread" aria-pressed="false">Unread</button>
+  <button id="starred" aria-pressed="false">★ Starred</button>
+  <button id="refresh">Refresh ( r )</button>
+  <span id="status"></span>
+</header>
+<div class="layout">
+  <aside>
+    <h2 title="Click: one topic. Ctrl/Cmd+click: select several.">Topics <small>(Ctrl+click: multi)</small></h2>
+    <div id="topics"></div>
+    <h2>Source</h2>
+    <select id="source" aria-label="Source"></select>
+  </aside>
+  <main id="list"></main>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+const LS = 'newsui.v1';
+const S = { topics: [], q: '', unread: false, starred: false, source: '', days: 3 };
+try { Object.assign(S, JSON.parse(localStorage.getItem(LS) || '{}')); } catch {}
+if (!Array.isArray(S.topics)) S.topics = [];
+const save = () => { try { localStorage.setItem(LS, JSON.stringify(S)); } catch {} };
+
+let DATA = { items: [], topics: [], topic_icons: {}, icons: {}, sources: [], last_refresh: 0, refreshing: false };
+let shown = 300, timer = null, lastError = '';
+
+// Feed text is untrusted: build DOM with textContent only, never innerHTML.
+function el(tag, props = {}, ...kids) {
+  const e = Object.assign(document.createElement(tag), props);
+  e.append(...kids);
+  return e;
+}
+const post = (path, body) => fetch(path, { method: 'POST', body: JSON.stringify(body || {}) }).then(r => r.json());
+const hhmm = ts => new Date(ts * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+async function load() {
+  clearTimeout(timer);
+  try {
+    DATA = await (await fetch('/api/items?days=' + S.days)).json();
+    lastError = '';
+  } catch { lastError = 'Server stopped. Run: python3 server.py'; }
+  render();
+  timer = setTimeout(load, DATA.refreshing ? 3000 : 300000);
+}
+
+function matches(i, skipTopics) {
+  if (!skipTopics && S.topics.length && !i.tags.some(t => S.topics.includes(t))) return false;
+  if (S.source && i.source !== S.source) return false;
+  if (S.unread && i.read) return false;
+  if (S.starred && !i.starred) return false;
+  const q = S.q.trim().toLowerCase();
+  return !q || (i.title + ' ' + i.summary).toLowerCase().includes(q);
+}
+
+function render() {
+  $('#q').value = S.q; $('#days').value = S.days; $('#unread').setAttribute('aria-pressed', S.unread); $('#starred').setAttribute('aria-pressed', S.starred);
+
+  const counts = {};
+  DATA.items.filter(i => matches(i, true)).forEach(i => i.tags.forEach(t => counts[t] = (counts[t] || 0) + 1));
+  const all = el('button', { className: 'topic', onclick: () => { S.topics = []; save(); shown = 300; render(); scrollTo(0, 0); } },
+    'All topics', el('span', {}, String(DATA.items.filter(i => matches(i, true)).length)));
+  all.setAttribute('aria-pressed', !S.topics.length);
+  $('#topics').replaceChildren(all, ...DATA.topics.filter(t => counts[t] || S.topics.includes(t)).map(t => {
+    const b = el('button', { className: 'topic', onclick: e => pickTopic(t, e) },
+      emoji(t) + t, el('span', {}, String(counts[t] || 0)));
+    b.setAttribute('aria-pressed', S.topics.includes(t));
+    return b;
+  }));
+
+  const src = $('#source');
+  src.replaceChildren(el('option', { value: '', textContent: 'All sources' }), ...DATA.sources.map(s => el('option', { value: s, textContent: s })));
+  src.value = DATA.sources.includes(S.source) ? S.source : '';
+
+  const items = DATA.items.filter(i => matches(i));
+  const list = $('#list');
+  list.replaceChildren();
+  if (!items.length) list.append(el('div', { id: 'empty', textContent: DATA.refreshing ? 'Fetching feeds…' : 'No items match.' }));
+  let day = '';
+  for (const i of items.slice(0, shown)) {
+    const d = new Date(i.ts * 1000).toDateString();
+    if (d !== day) { day = d; list.append(el('div', { className: 'day', textContent: dayLabel(d) })); }
+    list.append(card(i));
+  }
+  if (items.length > shown) list.append(el('div', { id: 'more' }, `${items.length - shown} more`, el('br'),
+    el('button', { textContent: 'Show more', onclick: () => { shown += 300; render(); } })));
+
+  const st = $('#status');
+  st.replaceChildren(...(lastError ? [lastError] : [
+    ...(DATA.refreshing ? [el('span', { className: 'spin' })] : []),
+    DATA.refreshing ? 'Fetching…' : DATA.last_refresh ? 'Updated ' + hhmm(DATA.last_refresh) : '']));
+  $('#refresh').disabled = DATA.refreshing || !!lastError;
+}
+
+const emoji = t => (DATA.topic_icons[t] ? DATA.topic_icons[t] + ' ' : '');
+// Favicons are cached by the server and served from /icons/; sources without one get their first letter.
+const favicon = s => DATA.icons[s] && /^\/icons\/[a-z0-9-]+\.(png|ico|gif|jpg)$/.test(DATA.icons[s])
+  ? el('img', { className: 'fav', src: DATA.icons[s], alt: '', width: 16, height: 16, loading: 'lazy' })
+  : el('span', { className: 'fav', textContent: s[0].toUpperCase() });
+
+function card(i) {
+  const safe = /^https?:\/\//i.test(i.url);
+  const a = el('a', { className: 'title', textContent: i.title, rel: 'noopener noreferrer', target: '_blank' });
+  if (safe) a.href = i.url;
+  const markRead = () => { if (!i.read) { mark(i, { read: true }); a.closest('article').classList.add('read'); } };
+  a.addEventListener('click', markRead); a.addEventListener('auxclick', markRead);
+  const star = el('button', { className: 'star', textContent: i.starred ? '★' : '☆', title: 'Star', onclick: () => { mark(i, { starred: !i.starred }); render(); } });
+  star.setAttribute('aria-pressed', i.starred);
+  return el('article', { className: i.read ? 'read' : '' },
+    star,
+    el('div', { className: 'meta' }, favicon(i.source), `${i.source} · ${hhmm(i.ts)}`),
+    a,
+    ...(i.summary ? [el('p', { className: 'snip', textContent: i.summary })] : []),
+    el('div', {}, ...i.tags.map(t => el('button', { className: 'chip', textContent: emoji(t) + t, onclick: e => pickTopic(t, e) }))));
+}
+
+function mark(i, patch) { Object.assign(i, patch); post('/api/mark', { url: i.url, ...patch }).catch(() => {}); }
+// Plain click: only this topic (clicking it again clears) and jump to top. Ctrl/Cmd-click: add/remove, stay in place.
+function pickTopic(t, e) {
+  const multi = e.ctrlKey || e.metaKey;
+  if (multi) toggle(S.topics, t);
+  else S.topics = S.topics.length === 1 && S.topics[0] === t ? [] : [t];
+  save(); shown = 300; render();
+  if (!multi) scrollTo(0, 0);
+}
+function toggle(arr, v) { const k = arr.indexOf(v); k < 0 ? arr.push(v) : arr.splice(k, 1); }
+function dayLabel(d) {
+  const t = new Date(); if (d === t.toDateString()) return 'Today';
+  t.setDate(t.getDate() - 1); return d === t.toDateString() ? 'Yesterday' : d;
+}
+
+async function refresh() {
+  if (DATA.refreshing) return;
+  DATA.refreshing = true; render();
+  try { await post('/api/refresh'); } catch {}
+  load();
+}
+
+$('#q').addEventListener('input', e => { S.q = e.target.value; save(); shown = 300; render(); });
+$('#days').addEventListener('change', e => { S.days = +e.target.value; save(); load(); });
+$('#source').addEventListener('change', e => { S.source = e.target.value; save(); render(); });
+$('#unread').addEventListener('click', () => { S.unread = !S.unread; save(); render(); });
+$('#starred').addEventListener('click', () => { S.starred = !S.starred; save(); render(); });
+$('#refresh').addEventListener('click', refresh);
+addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey || e.altKey || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+  if (e.key === '/') { e.preventDefault(); $('#q').focus(); }
+  else if (e.key === 'r') refresh();
+});
+
+// Lifecycle: this connection is how the server knows the page is open; it exits when the last one closes.
+const live = new EventSource('/api/live');
+live.onopen = () => { if (lastError) { lastError = ''; load(); } };
+live.onerror = () => { lastError = 'Server stopped. Run: python3 server.py'; render(); };
+
+load();
+</script>
+</body>
+</html>

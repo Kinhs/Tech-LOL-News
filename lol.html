@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>League News</title>
+<style>
+:root {
+  --bg: #f6f7f9; --card: #fff; --text: #1a1d21; --muted: #667085; --line: #e3e6eb;
+  --accent: #2563eb; --accent-bg: #e8effd; --item: #9a5b00; --item-bg: #fff1d6; --buff: #11743a; --buff-bg: #dcf5e4; --nerf: #b42318; --nerf-bg: #fde4e1;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #111317; --card: #1a1d23; --text: #e6e8ec; --muted: #9aa3b2; --line: #2a2f38; --accent: #6ea0ff; --accent-bg: #1d2a47; --item: #f0b45a; --item-bg: #3a2a10; --buff: #5fd68a; --buff-bg: #153322; --nerf: #ff8a80; --nerf-bg: #3b1816; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, sans-serif; }
+header { position: sticky; top: 0; z-index: 5; background: var(--card); border-bottom: 1px solid var(--line); padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+header h1 { font-size: 17px; margin: 0 6px 0 0; }
+.nav { color: var(--accent); text-decoration: none; font-size: 14px; }
+input[type=search] { flex: 1 1 200px; min-width: 0; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; font: inherit; }
+button { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button[aria-pressed=true] { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+#status { color: var(--muted); font-size: 13px; }
+.spin { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: s .7s linear infinite; vertical-align: -2px; margin-right: 6px; }
+@keyframes s { to { transform: rotate(360deg); } }
+#views { max-width: 900px; margin: 0 auto; padding: 14px 16px 0; display: flex; gap: 8px; }
+#views .sep { flex: 1; }
+.chip.buff { background: var(--buff-bg); color: var(--buff); }
+.chip.nerf { background: var(--nerf-bg); color: var(--nerf); }
+.chip.mixed { background: var(--item-bg); color: var(--item); }
+.chip.adjust { background: var(--line); color: var(--muted); }
+.badge { font-size: 11px; font-weight: 600; text-transform: uppercase; padding: 1px 7px; border-radius: 99px; margin-right: 8px; }
+.badge.buff { background: var(--buff-bg); color: var(--buff); }
+.badge.nerf { background: var(--nerf-bg); color: var(--nerf); }
+.badge.mixed { background: var(--item-bg); color: var(--item); }
+.badge.adjust { background: var(--line); color: var(--muted); }
+details.patch > summary { cursor: pointer; color: var(--accent); font-size: 13px; margin-top: 10px; }
+details.entry { border-top: 1px solid var(--line); padding: 6px 0; }
+details.entry > summary { cursor: pointer; font-weight: 500; }
+.reason { margin: 6px 0; color: var(--muted); font-size: 13.5px; }
+.change { font-size: 13.5px; margin: 3px 0; }
+.change .grp { color: var(--muted); }
+.change .up { color: var(--buff); } .change .down { color: var(--nerf); }
+.panel { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin-top: 8px; }
+.panel .phead { margin-bottom: 4px; }
+.ic { width: 16px; height: 16px; border-radius: 4px; vertical-align: -3px; margin-right: 5px; background: var(--line); object-fit: cover; }
+.ic.champions { border-radius: 50%; }
+.ic.runes { border-radius: 50%; background: #0006; padding: 1px; }
+.phead .ic { width: 22px; height: 22px; vertical-align: -6px; }
+.chip.active { outline: 2px solid var(--accent); }
+.body .note { margin-bottom: 4px; }
+.kind { margin: 12px 0 2px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.note { font-size: 12px; color: var(--muted); }
+main { max-width: 900px; margin: 0 auto; padding: 16px; }
+h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 18px 0 8px; }
+article { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+.meta { color: var(--muted); font-size: 12.5px; }
+.title { display: block; margin: 3px 0 6px; font-weight: 600; font-size: 16px; color: var(--text); text-decoration: none; }
+.title:hover { color: var(--accent); }
+.snip { margin: 0 0 8px; color: var(--muted); font-size: 14px; }
+.group { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+.chip { font-size: 12px; padding: 2px 8px; border-radius: 99px; margin: 3px 5px 0 0; background: var(--accent-bg); color: var(--accent); border-color: transparent; }
+.chip.item { background: var(--item-bg); color: var(--item); }
+.empty { text-align: center; color: var(--muted); padding: 24px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>League News</h1>
+  <a class="nav" href="/">‹ Tech News</a>
+  <button id="lol" aria-pressed="true">League of Legends</button>
+  <button id="wr" aria-pressed="false">Wild Rift</button>
+  <input id="q" type="search" placeholder="Search champion or item ( / )" aria-label="Search">
+  <button id="refresh">Refresh ( r )</button>
+  <span id="status"></span>
+</header>
+<nav id="views"><button id="v-patches">Patches</button><button id="v-champions">New &amp; reworked champions</button>
+  <span class="sep"></span>
+  <span id="vfilter"><button data-v="">All changes</button> <button data-v="buff">Buffs</button> <button data-v="nerf">Nerfs</button></span></nav>
+<main id="main"></main>
+<script>
+const $ = s => document.querySelector(s);
+const LS = 'newsui.lol.v1';
+const S = { game: 'lol', view: 'patches', verdict: '', q: '' };
+try { Object.assign(S, JSON.parse(localStorage.getItem(LS) || '{}')); } catch {}
+if (!['lol', 'wr'].includes(S.game)) S.game = 'lol';
+if (!['patches', 'champions'].includes(S.view)) S.view = 'patches';
+if (!['', 'buff', 'nerf'].includes(S.verdict)) S.verdict = '';
+const save = () => { try { localStorage.setItem(LS, JSON.stringify(S)); } catch {} };
+
+let DATA = { lol: { patches: [], champions: [] }, wr: { patches: [], champions: [] }, refreshing: false };
+let timer = null, lastError = '';
+
+// Article text is untrusted: textContent only, http(s) links only.
+function el(tag, props = {}, ...kids) { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; }
+const fmt = ts => new Date(ts * 1000).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
+
+async function load() {
+  clearTimeout(timer);
+  try { DATA = await (await fetch('/api/lol')).json(); lastError = ''; }
+  catch { lastError = 'Server stopped. Run: run.sh'; }
+  render();
+  timer = setTimeout(load, DATA.refreshing ? 3000 : 300000);
+}
+
+const hit = (words, q) => !q || words.join(' ').toLowerCase().includes(q);
+
+const MARK = { buff: '▲ ', nerf: '▼ ', mixed: '◆ ', adjust: '' };
+// Icons come from Riot's public CDN (Data Dragon), or riftpatchnotes.com where Riot has none; no other host is accepted.
+const ico = e => e.icon && /^https:\/\/(ddragon\.leagueoflegends\.com|www\.riftpatchnotes\.com)\//.test(e.icon)
+  ? [el('img', { className: 'ic ' + e.kind, src: e.icon, alt: '', width: 16, height: 16, loading: 'lazy', referrerPolicy: 'no-referrer' })] : [];
+const WORD = { buff: 'Buff', nerf: 'Nerf', mixed: 'Mixed', adjust: 'Adjusted' };
+
+// One champion/item/rune: reason, every change, and where the buff/nerf label came from.
+function entryBody(e) {
+  const box = el('div', { className: 'body' });
+  const src = e.verdict_source === 'inferred' ? 'guessed from the numbers' : 'label from ' + e.verdict_source;
+  box.append(el('div', { className: 'note', textContent: `${WORD[e.verdict]} (${src})` + (e.guess && e.guess !== e.verdict && e.verdict_source !== 'inferred' ? `; numbers alone suggest ${WORD[e.guess].toLowerCase()}` : '') }));
+  if (e.reason) box.append(el('p', { className: 'reason', textContent: e.reason }));
+  for (const c of e.changes) {
+    const text = c.stat || c.before ? `${c.stat ? c.stat + ': ' : ''}${c.before} ⇒ ${c.after}` : c.after;
+    box.append(el('div', { className: 'change' }, ...(c.group ? [el('span', { className: 'grp', textContent: c.group + ' · ' })] : []),
+      el('span', { className: c.verdict === 'buff' ? 'up' : c.verdict === 'nerf' ? 'down' : '', textContent: text })));
+  }
+  if (!e.changes.length && !e.reason) box.append(el('div', { className: 'note', textContent: 'No details in the patch note.' }));
+  return box;
+}
+function chip(e, onpick) {
+  return el('button', { className: 'chip ' + e.verdict, title: 'Click to show the changes', onclick: onpick }, ...ico(e), MARK[e.verdict] + e.name);
+}
+// Clicking a chip shows that entry's changes under the chips; clicking it again hides them.
+function pick(card, e, btn) {
+  const panel = card.panel, same = panel.dataset.name === e.name + e.kind && !panel.hidden;
+  card.querySelectorAll('.chip.active').forEach(c => c.classList.remove('active'));
+  panel.hidden = same;
+  panel.dataset.name = e.name + e.kind;
+  if (same) return;
+  btn.classList.add('active');
+  panel.replaceChildren(el('div', { className: 'phead' }, el('span', { className: 'badge ' + e.verdict, textContent: e.verdict }), ...ico(e), el('strong', { textContent: e.name })), entryBody(e));
+}
+function detailsOf(entries) {
+  const d = el('details', { className: 'patch' }, el('summary', { textContent: 'All details' }));
+  // Built on first open: a collapsed list would otherwise create hundreds of icons nobody looks at.
+  d.addEventListener('toggle', () => {
+    if (!d.open || d.dataset.built) return;
+    d.dataset.built = '1';
+    for (const e of entries) {
+      d.append(el('details', { className: 'entry' },
+        el('summary', {}, el('span', { className: 'badge ' + e.verdict, textContent: e.verdict }), ...ico(e), e.name), entryBody(e)));
+    }
+  });
+  return d;
+}
+function link(a) {
+  const x = el('a', { className: 'title', textContent: a.title, rel: 'noopener noreferrer', target: '_blank' });
+  if (/^https?:\/\//i.test(a.url)) x.href = a.url;
+  return x;
+}
+
+function render() {
+  $('#q').value = S.q;
+  $('#lol').setAttribute('aria-pressed', S.game === 'lol');
+  $('#wr').setAttribute('aria-pressed', S.game === 'wr');
+  const q = S.q.trim().toLowerCase(), g = DATA[S.game], main = $('#main');
+  main.replaceChildren();
+
+  for (const v of ['patches', 'champions']) $('#v-' + v).setAttribute('aria-pressed', S.view === v);
+  $('#vfilter').hidden = S.view !== 'patches';
+  document.querySelectorAll('#vfilter button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === S.verdict));
+  if (S.view === 'champions') {
+  const champs = g.champions.filter(a => hit([a.title, a.summary], q));
+  if (!champs.length) main.append(el('div', { className: 'empty', textContent: DATA.refreshing ? 'Fetching…' : 'Nothing found.' }));
+  for (const a of champs) main.append(el('article', {}, el('div', { className: 'meta', textContent: fmt(a.ts) }), link(a),
+    ...(a.summary ? [el('p', { className: 'snip', textContent: a.summary })] : [])));
+  } else {
+  const sel = e => S.verdict === '' || e.verdict === S.verdict || e.verdict === 'mixed';
+  const patches = [];
+  for (const a of g.patches) {
+    const titleHit = hit([a.title], q), named = a.details.filter(e => hit([e.name], q));
+    if (q && !titleHit && !named.length) continue;
+    const entries = (q && named.length ? named : a.details).filter(sel);
+    if (S.verdict && !entries.length) continue;
+    patches.push([a, entries]);
+  }
+  if (!patches.length) main.append(el('div', { className: 'empty', textContent: DATA.refreshing ? 'Fetching…' : 'Nothing found.' }));
+  for (const [a, entries] of patches) {
+    const panel = el('div', { className: 'panel', hidden: true });
+    const card = el('article', {}, el('div', { className: 'meta', textContent: fmt(a.ts) }), link(a));
+    card.panel = panel;
+    for (const [kind, label] of [['champions', 'Champions'], ['items', 'Items'], ['runes', 'Runes']]) {
+      const list = entries.filter(e => e.kind === kind);
+      if (!list.length) continue;
+      const n = v => list.filter(e => e.verdict === v).length;
+      card.append(el('div', { className: 'group', textContent: `${label} (${list.length}): ${n('buff')} buffed · ${n('nerf')} nerfed · ${n('mixed')} mixed · ${n('adjust')} adjusted` }),
+        el('div', {}, ...list.map(e => chip(e, ev => pick(card, e, ev.currentTarget)))));
+    }
+    card.append(panel);
+    if (!a.parsed) card.append(el('div', { className: 'group', textContent: 'Details not loaded yet. Press Refresh.' }));
+    if (entries.length) card.append(detailsOf(entries));
+    if (a.labels_url && /^https:\/\//.test(a.labels_url)) card.append(el('div', { className: 'group' }, 'Buff/nerf labels: ',
+      el('a', { href: a.labels_url, target: '_blank', rel: 'noopener noreferrer', textContent: 'riftpatchnotes.com' }), ' (where missing, guessed from the numbers)'));
+    if (a.other.length) card.append(el('div', { className: 'group', textContent: 'Also in this patch: ' + a.other.join(' · ') }));
+    main.append(card);
+  }
+  }
+
+  $('#status').replaceChildren(...(lastError ? [lastError] : DATA.refreshing ? [el('span', { className: 'spin' }), 'Fetching…'] : []));
+  $('#refresh').disabled = DATA.refreshing || !!lastError;
+}
+
+async function refresh() {
+  if (DATA.refreshing) return;
+  DATA.refreshing = true; render();
+  try { await fetch('/api/refresh', { method: 'POST', body: '{}' }); } catch {}
+  load();
+}
+
+$('#lol').addEventListener('click', () => { S.game = 'lol'; save(); render(); });
+$('#wr').addEventListener('click', () => { S.game = 'wr'; save(); render(); });
+for (const v of ['patches', 'champions']) $('#v-' + v).addEventListener('click', () => { S.view = v; save(); render(); scrollTo(0, 0); });
+document.querySelectorAll('#vfilter button').forEach(b => b.addEventListener('click', () => { S.verdict = b.dataset.v; save(); render(); }));
+$('#q').addEventListener('input', e => { S.q = e.target.value; save(); render(); });
+$('#refresh').addEventListener('click', refresh);
+addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey || e.altKey || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+  if (e.key === '/') { e.preventDefault(); $('#q').focus(); } else if (e.key === 'r') refresh();
+});
+
+// Lifecycle: this connection is how the server knows a page is open; it exits when the last one closes.
+const live = new EventSource('/api/live');
+live.onopen = () => { if (lastError) { lastError = ''; load(); } };
+live.onerror = () => { lastError = 'Server stopped. Run: run.sh'; render(); };
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+# Generated at runtime: your read/starred state, cached favicons, daily digests
+news.db
+news.db-*
+seen.db
+icons/
+digest/
+__pycache__/
+*.pyc
+.venv/

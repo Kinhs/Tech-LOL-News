@@ -1,0 +1,263 @@
+# Days of items kept in the DB (and fetched). Unstarred older items are pruned.
+keep_days = 30
+# The Markdown digest only lists new items newer than this.
+max_age_days = 2
+# server.py refreshes all feeds this often.
+refresh_minutes = 30
+
+# An item gets EVERY topic whose keyword appears (whole word) in its title or summary.
+# No hit -> the feed's own topic. Add topics freely; the UI picks them up.
+[topics]
+"AI" = ["ai", "artificial intelligence", "machine learning", "llm", "llms", "gpt", "chatgpt", "openai", "anthropic", "claude", "gemini", "copilot", "deepmind", "llama", "mistral", "neural network", "deep learning", "generative", "chatbot", "agentic", "agents", "diffusion"]
+"Phones & Mobile" = ["iphone", "android", "pixel", "galaxy", "smartphone", "smartphones", "phone", "phones", "ios", "xiaomi", "oneplus", "foldable", "samsung", "5g", "tablet", "ipad"]
+"Apple" = ["apple", "iphone", "ipad", "macbook", "mac", "macos", "ios", "airpods", "vision pro", "apple watch", "tim cook", "siri"]
+"Google & Android" = ["google", "android", "pixel", "chrome", "chromebook", "gemini", "waymo", "wear os"]
+"Chips & Hardware" = ["chip", "chips", "semiconductor", "nvidia", "amd", "intel", "tsmc", "gpu", "cpu", "processor", "qualcomm", "snapdragon", "arm", "risc-v", "hbm", "transistor", "silicon", "foundry"]
+"PCs & Laptops" = ["laptop", "laptops", "pc", "pcs", "windows", "macbook", "desktop", "monitor", "keyboard", "thinkpad", "surface", "chromebook", "motherboard", "ssd"]
+"Gadgets & Wearables" = ["smartwatch", "wearable", "wearables", "earbuds", "headphones", "apple watch", "galaxy watch", "fitbit", "garmin", "smart home", "vr", "headset", "meta quest", "glasses", "camera", "gadget", "kindle", "speaker"]
+"Security & Privacy" = ["security", "vulnerability", "vulnerabilities", "ransomware", "malware", "breach", "hack", "hacked", "hackers", "hacker", "phishing", "cve", "zero-day", "exploit", "privacy", "encryption", "cyberattack", "spyware", "botnet", "ddos", "leak", "leaked", "surveillance"]
+"Software & Dev" = ["python", "rust", "javascript", "typescript", "golang", "java", "kotlin", "swift", "c++", "compiler", "programming", "developer", "developers", "framework", "sdk", "api", "apis", "github", "git", "vscode", "webassembly", "wasm", "react", "css", "html", "sql", "database", "software"]
+"Open Source & Linux" = ["open source", "open-source", "linux", "kernel", "ubuntu", "debian", "fedora", "gnu", "foss", "free software", "mozilla", "firefox", "apache"]
+"Cloud & DevOps" = ["cloud", "aws", "azure", "kubernetes", "docker", "devops", "serverless", "terraform", "data center", "data centers", "datacenter", "saas", "ci/cd", "observability", "microservices", "gcp", "cloudflare", "outage"]
+"Science & Space" = ["space", "nasa", "spacex", "rocket", "satellite", "moon", "mars", "astronaut", "telescope", "physics", "quantum", "biology", "climate", "scientists", "science", "asteroid", "esa", "orbit", "fusion", "dna", "genome"]
+"Gaming" = ["game", "games", "gaming", "gamer", "playstation", "ps5", "xbox", "nintendo", "steam", "valve", "esports", "epic games", "video game", "video games", "dlc"]
+"EVs & Transport" = ["ev", "evs", "tesla", "electric vehicle", "electric vehicles", "electric car", "battery", "batteries", "charging", "self-driving", "autonomous", "waymo", "byd", "rivian", "lucid", "e-bike", "ebike", "scooter", "hybrid", "toyota", "aviation", "airline"]
+"Robotics" = ["robot", "robots", "robotics", "humanoid", "boston dynamics", "drone", "drones", "automation", "optimus", "unitree"]
+"Business & Startups" = ["startup", "startups", "funding", "raises", "raised", "valuation", "ipo", "acquisition", "acquires", "acquired", "layoffs", "revenue", "earnings", "venture", "vc", "billion", "ceo", "merger", "stock"]
+"Policy & Law" = ["regulation", "regulator", "regulators", "lawsuit", "sues", "sued", "court", "ruling", "antitrust", "ftc", "doj", "congress", "senate", "eu", "european union", "ban", "bans", "banned", "tariff", "tariffs", "export controls", "copyright", "patent", "gdpr", "legislation", "fcc"]
+"Crypto & Web3" = ["bitcoin", "ethereum", "crypto", "cryptocurrency", "blockchain", "nft", "stablecoin", "defi", "web3", "solana", "binance", "coinbase"]
+"Internet & Social" = ["social media", "tiktok", "instagram", "facebook", "meta", "twitter", "threads", "bluesky", "mastodon", "reddit", "discord", "snapchat", "whatsapp", "telegram", "influencer", "creators", "social network", "wikipedia", "internet", "browser"]
+"Streaming & Media" = ["netflix", "spotify", "disney", "streaming", "youtube", "hbo", "prime video", "podcast", "music", "film", "movie", "tv", "television", "hollywood", "anime", "apple tv"]
+"General Tech" = []
+
+# Emoji shown next to each topic in the UI.
+[topic_icons]
+"AI" = "🤖"
+"Phones & Mobile" = "📱"
+"Apple" = "🍎"
+"Google & Android" = "🔍"
+"Chips & Hardware" = "💾"
+"PCs & Laptops" = "💻"
+"Gadgets & Wearables" = "⌚"
+"Security & Privacy" = "🔒"
+"Software & Dev" = "⌨️"
+"Open Source & Linux" = "🐧"
+"Cloud & DevOps" = "☁️"
+"Science & Space" = "🚀"
+"Gaming" = "🎮"
+"EVs & Transport" = "🚗"
+"Robotics" = "🦾"
+"Business & Startups" = "💼"
+"Policy & Law" = "⚖️"
+"Crypto & Web3" = "₿"
+"Internet & Social" = "💬"
+"Streaming & Media" = "🎬"
+"General Tech" = "📰"
+
+[[feeds]]
+name = "OpenAI"
+url = "https://openai.com/news/rss.xml"
+topic = "AI"
+
+[[feeds]]
+name = "Google AI"
+url = "https://blog.google/technology/ai/rss/"
+topic = "AI"
+
+[[feeds]]
+name = "Hugging Face"
+url = "https://huggingface.co/blog/feed.xml"
+topic = "AI"
+
+[[feeds]]
+name = "MIT Technology Review AI"
+url = "https://www.technologyreview.com/topic/artificial-intelligence/feed"
+topic = "AI"
+
+[[feeds]]
+name = "The Decoder"
+url = "https://the-decoder.com/feed/"
+topic = "AI"
+
+[[feeds]]
+name = "Simon Willison"
+url = "https://simonwillison.net/atom/everything/"
+topic = "AI"
+
+[[feeds]]
+name = "Android Authority"
+url = "https://www.androidauthority.com/feed/"
+topic = "Phones & Mobile"
+
+[[feeds]]
+name = "Android Central"
+url = "https://www.androidcentral.com/feed"
+topic = "Phones & Mobile"
+
+[[feeds]]
+name = "9to5Mac"
+url = "https://9to5mac.com/feed/"
+topic = "Apple"
+
+[[feeds]]
+name = "MacRumors"
+url = "https://feeds.macrumors.com/MacRumors-All"
+topic = "Apple"
+
+[[feeds]]
+name = "9to5Google"
+url = "https://9to5google.com/feed/"
+topic = "Google & Android"
+
+[[feeds]]
+name = "The Verge"
+url = "https://www.theverge.com/rss/index.xml"
+topic = "General Tech"
+
+[[feeds]]
+name = "Ars Technica"
+url = "https://feeds.arstechnica.com/arstechnica/index"
+topic = "General Tech"
+icon = "https://cdn.arstechnica.net/favicon.ico"
+
+[[feeds]]
+name = "TechCrunch"
+url = "https://techcrunch.com/feed/"
+topic = "General Tech"
+
+[[feeds]]
+name = "Wired"
+url = "https://www.wired.com/feed/rss"
+topic = "General Tech"
+
+[[feeds]]
+name = "The Register"
+url = "https://www.theregister.com/headlines.atom"
+topic = "General Tech"
+
+[[feeds]]
+name = "Tom's Hardware"
+url = "https://www.tomshardware.com/feeds/all"
+topic = "Chips & Hardware"
+
+[[feeds]]
+name = "ZDNet"
+url = "https://www.zdnet.com/news/rss.xml"
+topic = "General Tech"
+
+[[feeds]]
+name = "IEEE Spectrum"
+url = "https://spectrum.ieee.org/feeds/feed.rss"
+topic = "General Tech"
+
+[[feeds]]
+name = "BBC Technology"
+url = "https://feeds.bbci.co.uk/news/technology/rss.xml"
+topic = "General Tech"
+
+[[feeds]]
+name = "Hacker News"
+url = "https://news.ycombinator.com/rss"
+topic = "Software & Dev"
+
+[[feeds]]
+name = "GitHub Blog"
+url = "https://github.blog/feed/"
+topic = "Software & Dev"
+
+[[feeds]]
+name = "DEV Community"
+url = "https://dev.to/feed"
+topic = "Software & Dev"
+
+[[feeds]]
+name = "Lobsters"
+url = "https://lobste.rs/rss"
+topic = "Software & Dev"
+
+[[feeds]]
+name = "InfoQ"
+url = "https://feed.infoq.com/"
+topic = "Software & Dev"
+
+[[feeds]]
+name = "Stack Overflow Blog"
+url = "https://stackoverflow.blog/feed/"
+topic = "Software & Dev"
+
+[[feeds]]
+name = "Python Insider"
+url = "https://blog.python.org/feeds/posts/default"
+topic = "Software & Dev"
+
+[[feeds]]
+name = "Rust Blog"
+url = "https://blog.rust-lang.org/feed.xml"
+topic = "Software & Dev"
+
+[[feeds]]
+name = "Node.js Blog"
+url = "https://nodejs.org/en/feed/blog.xml"
+topic = "Software & Dev"
+
+[[feeds]]
+name = "The New Stack"
+url = "https://thenewstack.io/feed/"
+topic = "Cloud & DevOps"
+
+[[feeds]]
+name = "Kubernetes Blog"
+url = "https://kubernetes.io/feed.xml"
+topic = "Cloud & DevOps"
+icon = "https://kubernetes.io/favicons/favicon-32x32.png"
+
+[[feeds]]
+name = "LWN"
+url = "https://lwn.net/headlines/rss"
+topic = "Open Source & Linux"
+
+[[feeds]]
+name = "BleepingComputer"
+url = "https://www.bleepingcomputer.com/feed/"
+topic = "Security & Privacy"
+
+[[feeds]]
+name = "Krebs on Security"
+url = "https://krebsonsecurity.com/feed/"
+topic = "Security & Privacy"
+
+[[feeds]]
+name = "The Hacker News"
+url = "https://feeds.feedburner.com/TheHackersNews"
+topic = "Security & Privacy"
+icon = "https://thehackernews.com/favicon.ico"
+
+[[feeds]]
+name = "Space.com"
+url = "https://www.space.com/feeds/all"
+topic = "Science & Space"
+
+[[feeds]]
+name = "NASA"
+url = "https://www.nasa.gov/news-release/feed/"
+topic = "Science & Space"
+
+[[feeds]]
+name = "ScienceDaily Computers"
+url = "https://www.sciencedaily.com/rss/computers_math.xml"
+topic = "Science & Space"
+
+[[feeds]]
+name = "PC Gamer"
+url = "https://www.pcgamer.com/rss/"
+topic = "Gaming"
+
+[[feeds]]
+name = "Electrek"
+url = "https://electrek.co/feed/"
+topic = "EVs & Transport"
+
+[[feeds]]
+name = "CoinDesk"
+url = "https://www.coindesk.com/arc/outboundfeeds/rss/"
+topic = "Crypto & Web3"
