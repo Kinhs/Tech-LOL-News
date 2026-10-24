@@ -159,19 +159,22 @@ function chip(e, onpick, controls, key) {
   b.setAttribute('aria-expanded', 'false'); b.setAttribute('aria-controls', controls);
   return keyed(b, key);
 }
-// Clicking a chip shows that entry's changes under the chips; clicking it again hides them.
-function openPanel(card, e, btn) {
-  card.querySelectorAll('.chip').forEach(c => { c.classList.remove('active'); c.setAttribute('aria-expanded', 'false'); });
-  btn.classList.add('active'); btn.setAttribute('aria-expanded', 'true');
-  card.panel.hidden = false;
-  card.panel.replaceChildren(el('div', { className: 'phead' }, el('span', { className: 'badge ' + e.verdict, textContent: WORD[e.verdict] }), ...ico(e), el('strong', { textContent: e.name })), entryBody(e));
+// Clicking a chip shows that entry's changes in the panel under its own category (Champions, Items or Runes);
+// clicking it again hides them. One entry can stay open per category.
+function resetChips(section) {
+  section.querySelectorAll('.chip').forEach(c => { c.classList.remove('active'); c.setAttribute('aria-expanded', 'false'); });
 }
-function pick(card, url, e, btn) {
-  const key = e.kind + '|' + e.name;
-  if (UI.open[url] === key) {
-    UI.open[url] = null; card.panel.hidden = true;
-    card.querySelectorAll('.chip').forEach(c => { c.classList.remove('active'); c.setAttribute('aria-expanded', 'false'); });
-  } else { UI.open[url] = key; openPanel(card, e, btn); }
+function openPanel(section, panel, e, btn) {
+  resetChips(section);
+  btn.classList.add('active'); btn.setAttribute('aria-expanded', 'true');
+  panel.hidden = false;
+  panel.replaceChildren(el('div', { className: 'phead' }, el('span', { className: 'badge ' + e.verdict, textContent: WORD[e.verdict] }), ...ico(e), el('strong', { textContent: e.name })), entryBody(e));
+}
+function pick(section, panel, url, e, btn) {
+  const open = UI.open[url] || (UI.open[url] = {});
+  if (open[e.kind] === e.name) {
+    open[e.kind] = null; panel.hidden = true; resetChips(section);
+  } else { open[e.kind] = e.name; openPanel(section, panel, e, btn); }
 }
 function detailsOf(entries, url) {
   const d = el('details', { className: 'patch' }, el('summary', { textContent: 'All details' }));
@@ -233,25 +236,25 @@ function render() {
     }
     if (!patches.length) empty();
     for (const [a, entries] of patches) {
-      const panel = el('div', { className: 'panel', hidden: true, id: 'panel-' + (++panelSeq) });
-      const buttons = new Map();
       const card = el('article', { className: 'patch-card' }, el('div', { className: 'head' }, link(a), dateEl(a.ts)));
-      card.panel = panel;
       for (const [kind, label] of [['champions', 'Champions'], ['items', 'Items'], ['runes', 'Runes']]) {
         const list = entries.filter(e => e.kind === kind);
         if (!list.length) continue;
-        card.append(el('section', { className: 'kind' },
+        const panel = el('div', { className: 'panel', hidden: true, id: 'panel-' + (++panelSeq) });
+        const buttons = new Map();
+        const section = el('section', { className: 'kind' },
           el('div', { className: 'kind-h' }, label, el('span', { textContent: String(list.length) })),
           ...verdictBar(list),
           el('div', { className: 'chips' }, ...list.map(e => {
-            const b = chip(e, ev => pick(card, a.url, e, ev.currentTarget), panel.id, a.url + '|' + e.kind + '|' + e.name);
+            const b = chip(e, ev => pick(section, panel, a.url, e, ev.currentTarget), panel.id, a.url + '|' + e.kind + '|' + e.name);
             buttons.set(e, b);
             return b;
-          }))));
+          })),
+          panel);
+        card.append(section);
+        const reopen = list.find(e => e.name === (UI.open[a.url] || {})[kind]);
+        if (reopen) openPanel(section, panel, reopen, buttons.get(reopen));
       }
-      card.append(panel);
-      const reopen = entries.find(e => e.kind + '|' + e.name === UI.open[a.url]);
-      if (reopen) openPanel(card, reopen, buttons.get(reopen));
       if (!a.parsed) card.append(el('div', { className: 'foot', textContent: 'Details are not loaded yet. Press Refresh.' }));
       if (entries.length) card.append(detailsOf(entries, a.url));
       const foot = el('div', { className: 'foot' });
