@@ -70,16 +70,6 @@ url = "https://huggingface.co/blog/feed.xml"
 topic = "AI"
 
 [[feeds]]
-name = "MIT Technology Review AI"
-url = "https://www.technologyreview.com/topic/artificial-intelligence/feed"
-topic = "AI"
-
-[[feeds]]
-name = "The Decoder"
-url = "https://the-decoder.com/feed/"
-topic = "AI"
-
-[[feeds]]
 name = "Simon Willison"
 url = "https://simonwillison.net/atom/everything/"
 topic = "AI"
@@ -110,11 +100,6 @@ url = "https://9to5google.com/feed/"
 topic = "Google & Android"
 
 [[feeds]]
-name = "The Verge"
-url = "https://www.theverge.com/rss/index.xml"
-topic = "General Tech"
-
-[[feeds]]
 name = "Ars Technica"
 url = "https://feeds.arstechnica.com/arstechnica/index"
 topic = "General Tech"
@@ -123,11 +108,6 @@ icon = "https://cdn.arstechnica.net/favicon.ico"
 [[feeds]]
 name = "TechCrunch"
 url = "https://techcrunch.com/feed/"
-topic = "General Tech"
-
-[[feeds]]
-name = "Wired"
-url = "https://www.wired.com/feed/rss"
 topic = "General Tech"
 
 [[feeds]]
@@ -210,11 +190,6 @@ name = "Kubernetes Blog"
 url = "https://kubernetes.io/feed.xml"
 topic = "Cloud & DevOps"
 icon = "https://kubernetes.io/favicons/favicon-32x32.png"
-
-[[feeds]]
-name = "LWN"
-url = "https://lwn.net/headlines/rss"
-topic = "Open Source & Linux"
 
 [[feeds]]
 name = "BleepingComputer"
