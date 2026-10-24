@@ -3,106 +3,134 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f1f4f6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101722" media="(prefers-color-scheme: dark)">
 <title>League News</title>
+<link rel="stylesheet" href="/common.css">
 <style>
-:root {
-  --bg: #f6f7f9; --card: #fff; --text: #1a1d21; --muted: #667085; --line: #e3e6eb;
-  --accent: #2563eb; --accent-bg: #e8effd; --item: #9a5b00; --item-bg: #fff1d6; --buff: #11743a; --buff-bg: #dcf5e4; --nerf: #b42318; --nerf-bg: #fde4e1;
-}
-@media (prefers-color-scheme: dark) {
-  :root { --bg: #111317; --card: #1a1d23; --text: #e6e8ec; --muted: #9aa3b2; --line: #2a2f38; --accent: #6ea0ff; --accent-bg: #1d2a47; --item: #f0b45a; --item-bg: #3a2a10; --buff: #5fd68a; --buff-bg: #153322; --nerf: #ff8a80; --nerf-bg: #3b1816; }
-}
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, sans-serif; }
-header { position: sticky; top: 0; z-index: 5; background: var(--card); border-bottom: 1px solid var(--line); padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-header h1 { font-size: 17px; margin: 0 6px 0 0; }
-.nav { color: var(--accent); text-decoration: none; font-size: 14px; }
-input[type=search] { flex: 1 1 200px; min-width: 0; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; font: inherit; }
-button { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
-button:hover { border-color: var(--accent); }
-button[aria-pressed=true] { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
-#status { color: var(--muted); font-size: 13px; }
-.spin { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: s .7s linear infinite; vertical-align: -2px; margin-right: 6px; }
-@keyframes s { to { transform: rotate(360deg); } }
-#views { max-width: 900px; margin: 0 auto; padding: 14px 16px 0; display: flex; gap: 8px; }
-#views .sep { flex: 1; }
+html { scroll-padding-top: calc(var(--hdr) + 16px); }
+.seg { display: inline-flex; }
+.seg button { border-radius: 0; margin-left: -1px; }
+.seg button:first-child { border-radius: 6px 0 0 6px; margin-left: 0; }
+.seg button:last-child { border-radius: 0 6px 6px 0; }
+.seg button[aria-pressed=true] { position: relative; z-index: 1; }
+
+#views { max-width: 820px; margin: 0 auto; padding: 18px 20px 0; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 22px; }
+#views .tab { border: 0; border-bottom: 2px solid transparent; border-radius: 0; padding: 6px 2px 8px; font-weight: 600; color: var(--muted); background: none; }
+#views .tab[aria-pressed=true] { color: var(--text); border-bottom-color: var(--signal); background: none; }
+#views .tab:hover { color: var(--text); }
+#vfilter { margin-left: auto; margin-bottom: 6px; }
+main { max-width: 820px; margin: 0 auto; padding: 14px 20px 40px; }
+
+#to-top { position: fixed; right: 18px; bottom: calc(18px + env(safe-area-inset-bottom)); z-index: 9; background: var(--panel); box-shadow: 0 8px 24px rgba(0, 0, 0, .28); }
+#to-top[hidden] { display: none; }
+@media (max-width: 760px) { #to-top { right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); } }
+
+/* Patch card */
+.patch-card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; margin-bottom: 14px; }
+.head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.title { font-family: var(--serif); font-weight: 600; font-size: 19px; line-height: 1.3; color: var(--text); text-decoration: none; overflow-wrap: anywhere; }
+.title:hover { color: var(--signal); }
+time { color: var(--muted); font-size: 13px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.kind { margin-top: 16px; }
+.kind-h { display: flex; align-items: baseline; gap: 8px; font-weight: 700; font-size: 14px; }
+.kind-h span { font-weight: 400; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.bar { display: flex; height: 8px; margin: 7px 0 5px; border-radius: 3px; overflow: hidden; background: var(--line); gap: 2px; }
+.bar i { display: block; min-width: 4px; }
+.bar .buff { background: var(--buff); } .bar .nerf { background: var(--nerf); } .bar .mixed { background: var(--mixed); } .bar .adjust { background: var(--muted); opacity: .55; }
+.counts { color: var(--muted); font-size: 12.5px; margin-bottom: 8px; font-variant-numeric: tabular-nums; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12.5px; padding: 2px 8px; border-radius: 4px; border-color: transparent; display: inline-flex; align-items: center; }
 .chip.buff { background: var(--buff-bg); color: var(--buff); }
 .chip.nerf { background: var(--nerf-bg); color: var(--nerf); }
-.chip.mixed { background: var(--item-bg); color: var(--item); }
-.chip.adjust { background: var(--line); color: var(--muted); }
-.badge { font-size: 11px; font-weight: 600; text-transform: uppercase; padding: 1px 7px; border-radius: 99px; margin-right: 8px; }
-.badge.buff { background: var(--buff-bg); color: var(--buff); }
-.badge.nerf { background: var(--nerf-bg); color: var(--nerf); }
-.badge.mixed { background: var(--item-bg); color: var(--item); }
-.badge.adjust { background: var(--line); color: var(--muted); }
-details.patch > summary { cursor: pointer; color: var(--accent); font-size: 13px; margin-top: 10px; }
-details.entry { border-top: 1px solid var(--line); padding: 6px 0; }
-details.entry > summary { cursor: pointer; font-weight: 500; }
-.reason { margin: 6px 0; color: var(--muted); font-size: 13.5px; }
-.change { font-size: 13.5px; margin: 3px 0; }
+.chip.mixed { background: var(--mixed-bg); color: var(--mixed); }
+.chip.adjust { background: var(--line); color: var(--text); }
+.chip.active { outline: 2px solid var(--signal); outline-offset: 1px; }
+.ic { width: 16px; height: 16px; border-radius: 4px; margin-right: 5px; background: var(--line); object-fit: cover; flex: none; }
+.ic.champions, .ic.runes { border-radius: 50%; }
+.ic.runes { background: #0006; padding: 1px; }
+.panel { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; margin-top: 12px; }
+.phead { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.phead .ic { width: 22px; height: 22px; margin: 0; }
+.badge { font-size: 11.5px; font-weight: 600; padding: 1px 7px; border-radius: 4px; }
+.badge.buff { background: var(--buff-bg); color: var(--buff); } .badge.nerf { background: var(--nerf-bg); color: var(--nerf); }
+.badge.mixed { background: var(--mixed-bg); color: var(--mixed); } .badge.adjust { background: var(--line); color: var(--text); }
+.note { font-size: 12.5px; color: var(--muted); margin-bottom: 4px; }
+.reason { margin: 6px 0 8px; color: var(--muted); font-size: 14px; max-width: 70ch; }
+.change { font-size: 14px; margin: 3px 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .change .grp { color: var(--muted); }
 .change .up { color: var(--buff); } .change .down { color: var(--nerf); }
-.panel { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin-top: 8px; }
-.panel .phead { margin-bottom: 4px; }
-.ic { width: 16px; height: 16px; border-radius: 4px; vertical-align: -3px; margin-right: 5px; background: var(--line); object-fit: cover; }
-.ic.champions { border-radius: 50%; }
-.ic.runes { border-radius: 50%; background: #0006; padding: 1px; }
-.phead .ic { width: 22px; height: 22px; vertical-align: -6px; }
-.chip.active { outline: 2px solid var(--accent); }
-.body .note { margin-bottom: 4px; }
-.kind { margin: 12px 0 2px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
-.note { font-size: 12px; color: var(--muted); }
-main { max-width: 900px; margin: 0 auto; padding: 16px; }
-h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 18px 0 8px; }
-article { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
-.meta { color: var(--muted); font-size: 12.5px; }
-.title { display: block; margin: 3px 0 6px; font-weight: 600; font-size: 16px; color: var(--text); text-decoration: none; }
-.title:hover { color: var(--accent); }
-.snip { margin: 0 0 8px; color: var(--muted); font-size: 14px; }
-.group { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
-.chip { font-size: 12px; padding: 2px 8px; border-radius: 99px; margin: 3px 5px 0 0; background: var(--accent-bg); color: var(--accent); border-color: transparent; }
-.chip.item { background: var(--item-bg); color: var(--item); }
-.empty { text-align: center; color: var(--muted); padding: 24px 0; }
+details.patch { margin-top: 14px; }
+details.patch > summary { cursor: pointer; color: var(--signal); font-size: 13.5px; font-weight: 600; }
+details.entry { border-top: 1px solid var(--line); padding: 7px 0; margin-top: 7px; }
+details.entry > summary { cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+details.entry .ic { margin: 0; }
+.foot { margin-top: 14px; font-size: 12.5px; color: var(--muted); }
+.foot a { color: var(--muted); }
+.foot p { margin: 2px 0; }
+
+/* New and reworked champions: dated rows, same rhythm as the Tech News feed */
+.row { display: grid; grid-template-columns: 76px minmax(0, 1fr); column-gap: 14px; padding: 14px 16px; margin-bottom: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.row:hover { border-color: var(--muted); }
+.row { position: relative; }
+.row .title::after { content: ""; position: absolute; inset: 0; border-radius: 8px; }  /* whole row opens the article */
+.row:hover .title { color: var(--signal); }
+.row .title:focus-visible { outline: none; }
+.row .title:focus-visible::after { outline: 2px solid var(--signal); outline-offset: 2px; }
+.row .snip { margin: 5px 0 0; color: var(--muted); font-size: 14.5px; max-width: 70ch; }
+.empty { text-align: center; color: var(--muted); padding: 48px 12px; }
+
+@media (pointer: coarse) {
+  button { padding: 10px 14px; }
+  .chip { padding: 8px 10px; }
+  summary { padding: 6px 0; }
+}
+@media (max-width: 760px) {
+  html { scroll-padding-top: 16px; }
+  #views, main { padding-left: 16px; padding-right: 16px; }
+  #vfilter { margin-left: 0; }
+  .patch-card { padding: 14px; }
+  .head { flex-direction: column; gap: 2px; }
+  .row { grid-template-columns: minmax(0, 1fr); }
+}
 </style>
 </head>
 <body>
 <header>
-  <h1>League News</h1>
-  <a class="nav" href="/">‹ Tech News</a>
-  <button id="lol" aria-pressed="true">League of Legends</button>
-  <button id="wr" aria-pressed="false">Wild Rift</button>
-  <input id="q" type="search" placeholder="Search champion or item ( / )" aria-label="Search">
-  <button id="refresh">Refresh ( r )</button>
-  <span id="status"></span>
+  <nav class="switch" aria-label="Section"><a href="/">Tech News</a><a href="/lol" aria-current="page">League News</a></nav>
+  <h1 class="sr">League News</h1>
+  <span class="seg" role="group" aria-label="Game"><button id="lol" aria-pressed="true">League of Legends</button><button id="wr" aria-pressed="false">Wild Rift</button></span>
+  <input id="q" type="search" name="q" placeholder="Search champion or item" aria-label="Search champion or item" aria-keyshortcuts="/" title="Press / to search" autocomplete="off" spellcheck="false">
+  <button id="refresh" aria-keyshortcuts="r" title="Fetch new patches (r)">Refresh</button>
+  <span id="status" role="status" aria-live="polite"></span>
 </header>
-<nav id="views"><button id="v-patches">Patches</button><button id="v-champions">New &amp; reworked champions</button>
-  <span class="sep"></span>
-  <span id="vfilter"><button data-v="">All changes</button> <button data-v="buff">Buffs</button> <button data-v="nerf">Nerfs</button></span></nav>
+<nav id="views" aria-label="League views">
+  <button class="tab" id="v-patches">Patches</button>
+  <button class="tab" id="v-champions">New and reworked champions</button>
+  <span id="vfilter" class="seg" role="group" aria-label="Show"><button data-v="">All changes</button><button data-v="buff">Buffs</button><button data-v="nerf">Nerfs</button></span>
+</nav>
 <main id="main"></main>
+<button id="to-top" aria-label="Back to top" title="Back to top (t)" hidden>↑ Top</button>
+<script src="/common.js"></script>
 <script>
-const $ = s => document.querySelector(s);
-const LS = 'newsui.lol.v1';
-const S = { game: 'lol', view: 'patches', verdict: '', q: '' };
-try { Object.assign(S, JSON.parse(localStorage.getItem(LS) || '{}')); } catch {}
+const [S, save] = loadState('newsui.lol.v1', { game: 'lol', view: 'patches', verdict: '', q: '' });
 if (!['lol', 'wr'].includes(S.game)) S.game = 'lol';
 if (!['patches', 'champions'].includes(S.view)) S.view = 'patches';
 if (!['', 'buff', 'nerf'].includes(S.verdict)) S.verdict = '';
-const save = () => { try { localStorage.setItem(LS, JSON.stringify(S)); } catch {} };
+let panelSeq = 0;
+// Per patch (by URL): which chip panel and whether "All details" is open. Kept across redraws so filtering,
+// searching and the background reload do not close what you are reading.
+const UI = { open: {}, details: {} };
+const P = createPage({
+  url: () => '/api/lol',
+  initial: { lol: { patches: [], champions: [] }, wr: { patches: [], champions: [] }, refreshing: false },
+  render: () => render(),
+});
 
-let DATA = { lol: { patches: [], champions: [] }, wr: { patches: [], champions: [] }, refreshing: false };
-let timer = null, lastError = '';
-
-// Article text is untrusted: textContent only, http(s) links only.
-function el(tag, props = {}, ...kids) { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; }
 const fmt = ts => new Date(ts * 1000).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
-
-async function load() {
-  clearTimeout(timer);
-  try { DATA = await (await fetch('/api/lol')).json(); lastError = ''; }
-  catch { lastError = 'Server stopped. Run: run.sh'; }
-  render();
-  timer = setTimeout(load, DATA.refreshing ? 3000 : 300000);
-}
+const fmtShort = ts => new Date(ts * 1000).toLocaleDateString([], { month: 'short', day: 'numeric', year: new Date(ts * 1000).getFullYear() === new Date().getFullYear() ? undefined : 'numeric' });
+const dateEl = (ts, short) => el('time', { textContent: short ? fmtShort(ts) : fmt(ts), dateTime: new Date(ts * 1000).toISOString() });
 
 const hit = (words, q) => !q || words.join(' ').toLowerCase().includes(q);
 
@@ -119,37 +147,45 @@ function entryBody(e) {
   box.append(el('div', { className: 'note', textContent: `${WORD[e.verdict]} (${src})` + (e.guess && e.guess !== e.verdict && e.verdict_source !== 'inferred' ? `; numbers alone suggest ${WORD[e.guess].toLowerCase()}` : '') }));
   if (e.reason) box.append(el('p', { className: 'reason', textContent: e.reason }));
   for (const c of e.changes) {
-    const text = c.stat || c.before ? `${c.stat ? c.stat + ': ' : ''}${c.before} ⇒ ${c.after}` : c.after;
-    box.append(el('div', { className: 'change' }, ...(c.group ? [el('span', { className: 'grp', textContent: c.group + ' · ' })] : []),
+    const text = (c.verdict === 'buff' ? '▲ ' : c.verdict === 'nerf' ? '▼ ' : '') + (c.stat || c.before ? `${c.stat ? c.stat + ': ' : ''}${c.before} ⇒ ${c.after}` : c.after);
+    box.append(el('div', { className: 'change' }, ...(c.group ? [el('span', { className: 'grp', textContent: c.group + ': ' })] : []),
       el('span', { className: c.verdict === 'buff' ? 'up' : c.verdict === 'nerf' ? 'down' : '', textContent: text })));
   }
   if (!e.changes.length && !e.reason) box.append(el('div', { className: 'note', textContent: 'No details in the patch note.' }));
   return box;
 }
-function chip(e, onpick) {
-  return el('button', { className: 'chip ' + e.verdict, title: 'Click to show the changes', onclick: onpick }, ...ico(e), MARK[e.verdict] + e.name);
+function chip(e, onpick, controls, key) {
+  const b = el('button', { className: 'chip ' + e.verdict, title: 'Show the changes', onclick: onpick }, ...ico(e), MARK[e.verdict] + e.name);
+  b.setAttribute('aria-expanded', 'false'); b.setAttribute('aria-controls', controls);
+  return keyed(b, key);
 }
 // Clicking a chip shows that entry's changes under the chips; clicking it again hides them.
-function pick(card, e, btn) {
-  const panel = card.panel, same = panel.dataset.name === e.name + e.kind && !panel.hidden;
-  card.querySelectorAll('.chip.active').forEach(c => c.classList.remove('active'));
-  panel.hidden = same;
-  panel.dataset.name = e.name + e.kind;
-  if (same) return;
-  btn.classList.add('active');
-  panel.replaceChildren(el('div', { className: 'phead' }, el('span', { className: 'badge ' + e.verdict, textContent: e.verdict }), ...ico(e), el('strong', { textContent: e.name })), entryBody(e));
+function openPanel(card, e, btn) {
+  card.querySelectorAll('.chip').forEach(c => { c.classList.remove('active'); c.setAttribute('aria-expanded', 'false'); });
+  btn.classList.add('active'); btn.setAttribute('aria-expanded', 'true');
+  card.panel.hidden = false;
+  card.panel.replaceChildren(el('div', { className: 'phead' }, el('span', { className: 'badge ' + e.verdict, textContent: WORD[e.verdict] }), ...ico(e), el('strong', { textContent: e.name })), entryBody(e));
 }
-function detailsOf(entries) {
+function pick(card, url, e, btn) {
+  const key = e.kind + '|' + e.name;
+  if (UI.open[url] === key) {
+    UI.open[url] = null; card.panel.hidden = true;
+    card.querySelectorAll('.chip').forEach(c => { c.classList.remove('active'); c.setAttribute('aria-expanded', 'false'); });
+  } else { UI.open[url] = key; openPanel(card, e, btn); }
+}
+function detailsOf(entries, url) {
   const d = el('details', { className: 'patch' }, el('summary', { textContent: 'All details' }));
-  // Built on first open: a collapsed list would otherwise create hundreds of icons nobody looks at.
-  d.addEventListener('toggle', () => {
-    if (!d.open || d.dataset.built) return;
+  // Rows are built on first open: a collapsed list would otherwise create hundreds of icons nobody looks at.
+  const fill = () => {
+    if (d.dataset.built) return;
     d.dataset.built = '1';
     for (const e of entries) {
       d.append(el('details', { className: 'entry' },
-        el('summary', {}, el('span', { className: 'badge ' + e.verdict, textContent: e.verdict }), ...ico(e), e.name), entryBody(e)));
+        el('summary', {}, el('span', { className: 'badge ' + e.verdict, textContent: WORD[e.verdict] }), ...ico(e), e.name), entryBody(e)));
     }
-  });
+  };
+  d.addEventListener('toggle', () => { UI.details[url] = d.open; if (d.open) fill(); });
+  if (UI.details[url]) { d.open = true; fill(); }
   return d;
 }
 function link(a) {
@@ -157,63 +193,78 @@ function link(a) {
   if (/^https?:\/\//i.test(a.url)) x.href = a.url;
   return x;
 }
+// A thin bar split by verdict shows at a glance which way a patch leans; the counts are repeated as text.
+function verdictBar(list) {
+  const n = v => list.filter(e => e.verdict === v).length;
+  const parts = [['buff', 'buffed'], ['nerf', 'nerfed'], ['mixed', 'mixed'], ['adjust', 'adjusted']].filter(([v]) => n(v));
+  const text = parts.map(([v, w]) => `${n(v)} ${w}`).join(', ');
+  const bar = el('div', { className: 'bar', role: 'img' }, ...parts.map(([v]) => { const s = el('i', { className: v }); s.style.flex = n(v); return s; }));
+  bar.setAttribute('aria-label', text);
+  return [bar, el('div', { className: 'counts', textContent: text })];
+}
 
 function render() {
+  const fk = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.key : null;
   $('#q').value = S.q;
   $('#lol').setAttribute('aria-pressed', S.game === 'lol');
   $('#wr').setAttribute('aria-pressed', S.game === 'wr');
-  const q = S.q.trim().toLowerCase(), g = DATA[S.game], main = $('#main');
+  const q = S.q.trim().toLowerCase(), g = P.data[S.game], main = $('#main');
   main.replaceChildren();
 
   for (const v of ['patches', 'champions']) $('#v-' + v).setAttribute('aria-pressed', S.view === v);
   $('#vfilter').hidden = S.view !== 'patches';
   document.querySelectorAll('#vfilter button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === S.verdict));
+  const empty = () => main.append(el('div', { className: 'empty', textContent: P.data.refreshing ? 'Fetching the latest patches…' : S.q.trim() || S.verdict ? 'Nothing matches. Clear the search or choose All changes.' : 'Nothing here yet. Press Refresh to fetch patches.' }));
+
   if (S.view === 'champions') {
-  const champs = g.champions.filter(a => hit([a.title, a.summary], q));
-  if (!champs.length) main.append(el('div', { className: 'empty', textContent: DATA.refreshing ? 'Fetching…' : 'Nothing found.' }));
-  for (const a of champs) main.append(el('article', {}, el('div', { className: 'meta', textContent: fmt(a.ts) }), link(a),
-    ...(a.summary ? [el('p', { className: 'snip', textContent: a.summary })] : [])));
+    const champs = g.champions.filter(a => hit([a.title, a.summary], q));
+    if (!champs.length) empty();
+    for (const a of champs) main.append(el('article', { className: 'row' }, dateEl(a.ts, true),
+      el('div', {}, link(a), ...(a.summary ? [el('p', { className: 'snip', textContent: a.summary })] : []))));
   } else {
-  const sel = e => S.verdict === '' || e.verdict === S.verdict || e.verdict === 'mixed';
-  const patches = [];
-  for (const a of g.patches) {
-    const titleHit = hit([a.title], q), named = a.details.filter(e => hit([e.name], q));
-    if (q && !titleHit && !named.length) continue;
-    const entries = (q && named.length ? named : a.details).filter(sel);
-    if (S.verdict && !entries.length) continue;
-    patches.push([a, entries]);
-  }
-  if (!patches.length) main.append(el('div', { className: 'empty', textContent: DATA.refreshing ? 'Fetching…' : 'Nothing found.' }));
-  for (const [a, entries] of patches) {
-    const panel = el('div', { className: 'panel', hidden: true });
-    const card = el('article', {}, el('div', { className: 'meta', textContent: fmt(a.ts) }), link(a));
-    card.panel = panel;
-    for (const [kind, label] of [['champions', 'Champions'], ['items', 'Items'], ['runes', 'Runes']]) {
-      const list = entries.filter(e => e.kind === kind);
-      if (!list.length) continue;
-      const n = v => list.filter(e => e.verdict === v).length;
-      card.append(el('div', { className: 'group', textContent: `${label} (${list.length}): ${n('buff')} buffed · ${n('nerf')} nerfed · ${n('mixed')} mixed · ${n('adjust')} adjusted` }),
-        el('div', {}, ...list.map(e => chip(e, ev => pick(card, e, ev.currentTarget)))));
+    const sel = e => S.verdict === '' || e.verdict === S.verdict || e.verdict === 'mixed';
+    const patches = [];
+    for (const a of g.patches) {
+      const titleHit = hit([a.title], q), named = a.details.filter(e => hit([e.name], q));
+      if (q && !titleHit && !named.length) continue;
+      const entries = (q && named.length ? named : a.details).filter(sel);
+      if (S.verdict && !entries.length) continue;
+      patches.push([a, entries]);
     }
-    card.append(panel);
-    if (!a.parsed) card.append(el('div', { className: 'group', textContent: 'Details not loaded yet. Press Refresh.' }));
-    if (entries.length) card.append(detailsOf(entries));
-    if (a.labels_url && /^https:\/\//.test(a.labels_url)) card.append(el('div', { className: 'group' }, 'Buff/nerf labels: ',
-      el('a', { href: a.labels_url, target: '_blank', rel: 'noopener noreferrer', textContent: 'riftpatchnotes.com' }), ' (where missing, guessed from the numbers)'));
-    if (a.other.length) card.append(el('div', { className: 'group', textContent: 'Also in this patch: ' + a.other.join(' · ') }));
-    main.append(card);
-  }
+    if (!patches.length) empty();
+    for (const [a, entries] of patches) {
+      const panel = el('div', { className: 'panel', hidden: true, id: 'panel-' + (++panelSeq) });
+      const buttons = new Map();
+      const card = el('article', { className: 'patch-card' }, el('div', { className: 'head' }, link(a), dateEl(a.ts)));
+      card.panel = panel;
+      for (const [kind, label] of [['champions', 'Champions'], ['items', 'Items'], ['runes', 'Runes']]) {
+        const list = entries.filter(e => e.kind === kind);
+        if (!list.length) continue;
+        card.append(el('section', { className: 'kind' },
+          el('div', { className: 'kind-h' }, label, el('span', { textContent: String(list.length) })),
+          ...verdictBar(list),
+          el('div', { className: 'chips' }, ...list.map(e => {
+            const b = chip(e, ev => pick(card, a.url, e, ev.currentTarget), panel.id, a.url + '|' + e.kind + '|' + e.name);
+            buttons.set(e, b);
+            return b;
+          }))));
+      }
+      card.append(panel);
+      const reopen = entries.find(e => e.kind + '|' + e.name === UI.open[a.url]);
+      if (reopen) openPanel(card, reopen, buttons.get(reopen));
+      if (!a.parsed) card.append(el('div', { className: 'foot', textContent: 'Details are not loaded yet. Press Refresh.' }));
+      if (entries.length) card.append(detailsOf(entries, a.url));
+      const foot = el('div', { className: 'foot' });
+      if (a.other.length) foot.append(el('p', { textContent: 'Also in this patch: ' + a.other.join(', ') }));
+      if (a.labels_url && /^https:\/\//.test(a.labels_url)) foot.append(el('p', {}, 'Buff and nerf labels from ',
+        el('a', { href: a.labels_url, target: '_blank', rel: 'noopener noreferrer', textContent: 'riftpatchnotes.com' }), '; where it has none, they are guessed from the numbers.'));
+      if (foot.children.length) card.append(foot);
+      main.append(card);
+    }
   }
 
-  $('#status').replaceChildren(...(lastError ? [lastError] : DATA.refreshing ? [el('span', { className: 'spin' }), 'Fetching…'] : []));
-  $('#refresh').disabled = DATA.refreshing || !!lastError;
-}
-
-async function refresh() {
-  if (DATA.refreshing) return;
-  DATA.refreshing = true; render();
-  try { await fetch('/api/refresh', { method: 'POST', body: '{}' }); } catch {}
-  load();
+  P.renderStatus();
+  if (fk) document.querySelectorAll('[data-key]').forEach(n => { if (n.dataset.key === fk) n.focus({ preventScroll: true }); });
 }
 
 $('#lol').addEventListener('click', () => { S.game = 'lol'; save(); render(); });
@@ -221,18 +272,15 @@ $('#wr').addEventListener('click', () => { S.game = 'wr'; save(); render(); });
 for (const v of ['patches', 'champions']) $('#v-' + v).addEventListener('click', () => { S.view = v; save(); render(); scrollTo(0, 0); });
 document.querySelectorAll('#vfilter button').forEach(b => b.addEventListener('click', () => { S.verdict = b.dataset.v; save(); render(); }));
 $('#q').addEventListener('input', e => { S.q = e.target.value; save(); render(); });
-$('#refresh').addEventListener('click', refresh);
+$('#refresh').addEventListener('click', P.refresh);
+$('#to-top').addEventListener('click', toTop);
+addEventListener('scroll', () => { $('#to-top').hidden = scrollY < 500; }, { passive: true });
 addEventListener('keydown', e => {
   if (e.ctrlKey || e.metaKey || e.altKey || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
-  if (e.key === '/') { e.preventDefault(); $('#q').focus(); } else if (e.key === 'r') refresh();
+  if (e.key === '/') { e.preventDefault(); $('#q').focus(); } else if (e.key === 'r') P.refresh(); else if (e.key === 't') toTop();
 });
 
-// Lifecycle: this connection is how the server knows a page is open; it exits when the last one closes.
-const live = new EventSource('/api/live');
-live.onopen = () => { if (lastError) { lastError = ''; load(); } };
-live.onerror = () => { lastError = 'Server stopped. Run: run.sh'; render(); };
-
-load();
+P.load();
 </script>
 </body>
 </html>

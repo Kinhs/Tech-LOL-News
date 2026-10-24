@@ -15,6 +15,7 @@ HOST, PORT = "127.0.0.1", 8000
 HOSTS = {f"127.0.0.1:{PORT}", f"localhost:{PORT}"}  # reject other Host/Origin: blocks DNS rebinding and cross-site POSTs
 IDLE_GRACE = 4    # seconds with no page connected -> stop (a reload reconnects in time)
 FIRST_PAGE_WAIT = 60  # seconds to wait for the first page after start
+ASSETS = {"/common.css": "text/css; charset=utf-8", "/common.js": "text/javascript; charset=utf-8"}  # shared by both pages; nothing else is served from disk
 
 cfg = news.load_cfg()
 refresh_lock = threading.Lock()
@@ -113,6 +114,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(404, {"error": "not found"})
             ctype = {"png": "image/png", "ico": "image/x-icon", "gif": "image/gif", "jpg": "image/jpeg"}[name.rsplit(".", 1)[1]]
             self.send(200, (news.ICONS / name).read_bytes(), ctype, cache="max-age=86400")
+        elif url.path in ASSETS:
+            self.send(200, (news.ROOT / url.path[1:]).read_bytes(), ASSETS[url.path])
         elif url.path == "/lol":
             self.send(200, (news.ROOT / "lol.html").read_bytes(), "text/html; charset=utf-8")
         elif url.path == "/api/lol":
