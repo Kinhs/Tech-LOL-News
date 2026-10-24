@@ -146,11 +146,6 @@ url = "https://github.blog/feed/"
 topic = "Software & Dev"
 
 [[feeds]]
-name = "DEV Community"
-url = "https://dev.to/feed"
-topic = "Software & Dev"
-
-[[feeds]]
 name = "Lobsters"
 url = "https://lobste.rs/rss"
 topic = "Software & Dev"
@@ -236,3 +231,138 @@ topic = "EVs & Transport"
 name = "CoinDesk"
 url = "https://www.coindesk.com/arc/outboundfeeds/rss/"
 topic = "Crypto & Web3"
+
+[[feeds]]
+name = "Google DeepMind"
+url = "https://deepmind.google/blog/rss.xml"
+topic = "AI"
+
+[[feeds]]
+name = "Import AI"
+url = "https://importai.substack.com/feed"
+topic = "AI"
+
+[[feeds]]
+name = "OMG Ubuntu"
+url = "https://www.omgubuntu.co.uk/feed"
+topic = "Open Source & Linux"
+
+[[feeds]]
+name = "It's FOSS"
+url = "https://itsfoss.com/feed/"
+topic = "Open Source & Linux"
+
+[[feeds]]
+name = "Schneier on Security"
+url = "https://www.schneier.com/feed/atom/"
+topic = "Security & Privacy"
+
+[[feeds]]
+name = "The Record"
+url = "https://therecord.media/feed"
+topic = "Security & Privacy"
+
+[[feeds]]
+name = "SecurityWeek"
+url = "https://feeds.feedburner.com/securityweek"
+topic = "Security & Privacy"
+
+[[feeds]]
+name = "Cloudflare Blog"
+url = "https://blog.cloudflare.com/rss/"
+topic = "Cloud & DevOps"
+
+[[feeds]]
+name = "AWS News Blog"
+url = "https://aws.amazon.com/blogs/aws/feed/"
+topic = "Cloud & DevOps"
+
+[[feeds]]
+name = "Martin Fowler"
+url = "https://martinfowler.com/feed.atom"
+topic = "Software & Dev"
+
+[[feeds]]
+name = "Smashing Magazine"
+url = "https://www.smashingmagazine.com/feed/"
+topic = "Software & Dev"
+
+[[feeds]]
+name = "Go Blog"
+url = "https://go.dev/blog/feed.atom"
+topic = "Software & Dev"
+
+[[feeds]]
+name = "TypeScript Blog"
+url = "https://devblogs.microsoft.com/typescript/feed/"
+topic = "Software & Dev"
+
+[[feeds]]
+name = "Quanta Magazine"
+url = "https://api.quantamagazine.org/feed/"
+topic = "Science & Space"
+
+[[feeds]]
+name = "The Next Platform"
+url = "https://www.nextplatform.com/feed/"
+topic = "Chips & Hardware"
+
+[[feeds]]
+name = "Chips and Cheese"
+url = "https://chipsandcheese.com/feed/"
+topic = "Chips & Hardware"
+
+[[feeds]]
+name = "The Guardian Tech"
+url = "https://www.theguardian.com/technology/rss"
+topic = "General Tech"
+
+[[feeds]]
+name = "NPR Technology"
+url = "https://feeds.npr.org/1019/rss.xml"
+topic = "General Tech"
+
+[[feeds]]
+name = "CNET News"
+url = "https://www.cnet.com/rss/news/"
+topic = "General Tech"
+
+[[feeds]]
+name = "MacStories"
+url = "https://www.macstories.net/feed/"
+topic = "Apple"
+
+[[feeds]]
+name = "EFF Updates"
+url = "https://www.eff.org/rss/updates.xml"
+topic = "Policy & Law"
+
+[[feeds]]
+name = "Rock Paper Shotgun"
+url = "https://www.rockpapershotgun.com/feed"
+topic = "Gaming"
+
+[[feeds]]
+name = "Eurogamer"
+url = "https://www.eurogamer.net/feed"
+topic = "Gaming"
+
+[[feeds]]
+name = "GamesIndustry.biz"
+url = "https://www.gamesindustry.biz/feed"
+topic = "Gaming"
+
+[[feeds]]
+name = "Decrypt"
+url = "https://decrypt.co/feed"
+topic = "Crypto & Web3"
+
+[[feeds]]
+name = "Crunchbase News"
+url = "https://news.crunchbase.com/feed/"
+topic = "Business & Startups"
+
+[[feeds]]
+name = "IEEE Spectrum Robotics"
+url = "https://spectrum.ieee.org/feeds/topic/robotics.rss"
+topic = "Robotics"
