@@ -1,4 +1,5 @@
 import json
+from contextlib import closing
 import sqlite3
 import unittest
 from unittest import mock
@@ -99,6 +100,40 @@ class LolTest(unittest.TestCase):
         self.assertEqual(lol._icon(icons, "champions", "Thornmail (Boots upgrade)")[0], "items")
         self.assertEqual(lol._icon(icons, "items", "Unknown Thing"), ("items", None))
 
+    def test_articles_skip_links_to_other_sites(self):
+        page_ = page([{"type": "articleCardGrid", "items": [
+            card("Patch 1 Notes", "/en-us/news/a", "2026-10-06T18:00:00.000Z", ["patch_notes"]),
+            card("Patch 2 Notes", "https://x.test/en-us/news/b", "2026-10-06T18:00:00.000Z", ["patch_notes"]),
+            card("Patch 3 Notes", "http://169.254.169.254/latest", "2026-10-06T18:00:00.000Z", ["patch_notes"]),
+            card("Patch 4 Notes", "https://x.test.evil.example/p", "2026-10-06T18:00:00.000Z", ["patch_notes"])]}])
+        self.assertEqual([a["url"] for a in lol.articles(page_, "https://x.test")], ["https://x.test/en-us/news/a", "https://x.test/en-us/news/b"])
+
+    def test_prune_keeps_newest_per_game_and_kind(self):
+        db = self.enterContext(closing(sqlite3.connect(":memory:")))
+        db.execute("CREATE TABLE lol_items (url TEXT PRIMARY KEY, game TEXT, kind TEXT, ts REAL)")
+        db.executemany("INSERT INTO lol_items VALUES (?,?,?,?)",
+                       [(f"p{g}{i}", g, "patch", i) for g in "ab" for i in range(lol.KEEP_PATCHES + 3)]
+                       + [(f"c{i}", "a", "champion", i) for i in range(lol.KEEP_CHAMPIONS + 2)])
+        lol.prune(db)
+        left = db.execute("SELECT game, kind, count(*), min(ts) FROM lol_items GROUP BY game, kind ORDER BY game, kind").fetchall()
+        self.assertEqual(left, [("a", "champion", lol.KEEP_CHAMPIONS, 2), ("a", "patch", lol.KEEP_PATCHES, 3), ("b", "patch", lol.KEEP_PATCHES, 3)])
+
+    def test_refresh_never_fetches_inside_a_write_transaction(self):
+        db = self.enterContext(closing(sqlite3.connect(":memory:", check_same_thread=False)))
+        db.row_factory = sqlite3.Row
+        db.executescript("""CREATE TABLE lol_items (url TEXT PRIMARY KEY, game TEXT, kind TEXT, title TEXT, ts REAL, summary TEXT,
+            parsed INTEGER DEFAULT 0, details TEXT, other TEXT); CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT);""")
+        busy = []
+        ddragon = {"versions.json": '["1.0.0"]', "champion.json": '{"data": {}}', "item.json": '{"data": {}}', "runesReforged.json": "[]"}
+
+        def fake(url, **kw):
+            busy.append(db.in_transaction)  # an open transaction here would block star/read clicks for the whole download
+            return (next((v for k, v in ddragon.items() if url.endswith(k)), None) or LIST).encode()
+        with mock.patch.object(news, "fetch", side_effect=fake):
+            lol.refresh(db)
+        self.assertGreater(len(busy), 4)
+        self.assertFalse(any(busy))
+
     def test_verdict_direction(self):
         self.assertEqual(lol._verdict("Damage", "5 - 30", "5 - 25"), "nerf")
         self.assertEqual(lol._verdict("Mana Cost", "40 / 45", "30 / 35"), "buff")  # lower cost is a buff
@@ -107,10 +142,10 @@ class LolTest(unittest.TestCase):
         self.assertEqual(lol._verdict("Passive", "old text", "new text"), "adjust")
 
     def test_refresh_stores_once_and_parses_patch(self):
-        db = sqlite3.connect(":memory:")
+        db = self.enterContext(closing(sqlite3.connect(":memory:")))
         db.row_factory = sqlite3.Row
         db.executescript("""CREATE TABLE lol_items (url TEXT PRIMARY KEY, game TEXT, kind TEXT, title TEXT, ts REAL, summary TEXT,
-            champions TEXT DEFAULT '[]', items TEXT DEFAULT '[]', parsed INTEGER DEFAULT 0, details TEXT, other TEXT);
+            parsed INTEGER DEFAULT 0, details TEXT, other TEXT);
             CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT);""")
         ddragon = {"versions.json": '["1.0.0"]', "champion.json": '{"data": {}}', "item.json": '{"data": {}}', "runesReforged.json": "[]"}
         fake = lambda url: (next((v for k, v in ddragon.items() if url.endswith(k)), None)
@@ -121,8 +156,8 @@ class LolTest(unittest.TestCase):
         self.assertGreater(first, 0)
         self.assertEqual(second, 0)
         patch = lol.rows(db)["lol"]["patches"][0]
-        self.assertEqual((patch["parsed"], patch["champions"], patch["items"], patch["other"]),
-                         (1, ["Ambessa", "K'Sante"], ["Runaan's Hurricane"], ["ARAM: Mayhem"]))
+        self.assertEqual((patch["parsed"], patch["other"], [e["name"] for e in patch["details"]]),
+                         (1, ["ARAM: Mayhem"], ["Ambessa", "K'Sante", "Runaan's Hurricane"]))
         self.assertEqual(patch["details"][0]["verdict"], "buff")  # the site's label beats my guess (nerf)
         self.assertEqual(patch["details"][1]["verdict_source"], "inferred")  # K'Sante is not on the site's list
         self.assertEqual(len(lol.rows(db)["lol"]["champions"]), 1)

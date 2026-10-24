@@ -44,7 +44,13 @@ def articles(page, base):
             when = it.get("publishedAt") or (it.get("analytics") or {}).get("publishDate")
             if not (it.get("title") and path and when):
                 continue
-            out.append({"title": it["title"], "url": base + path if path.startswith("/") else path,
+            if path.startswith("/"):
+                url = base + path
+            elif path.startswith(base + "/"):
+                url = path
+            else:  # a link to another site: never fetch it from here
+                continue
+            out.append({"title": it["title"], "url": url,
                         "ts": datetime.fromisoformat(when.replace("Z", "+00:00")).timestamp(),
                         "summary": news._clean((it.get("description") or {}).get("body", "")),
                         "tags": [t.get("machineName") for t in it.get("tags") or []]})
@@ -222,6 +228,14 @@ def _warn(what, e):
     print(f"warn: {what}: {e}", file=sys.stderr)
 
 
+def prune(db):
+    """Keep only the newest KEEP_PATCHES patches and KEEP_CHAMPIONS champion articles per game."""
+    for kind, keep in (("patch", KEEP_PATCHES), ("champion", KEEP_CHAMPIONS)):
+        db.execute("""DELETE FROM lol_items WHERE kind = ? AND url NOT IN (
+                        SELECT url FROM lol_items k WHERE k.kind = lol_items.kind AND k.game = lol_items.game
+                        ORDER BY k.ts DESC LIMIT ?)""", (kind, keep))
+
+
 def refresh(db):
     """Store new patch / champion articles, then parse each patch note once. Returns how many rows were added."""
     chosen = {}
@@ -241,6 +255,7 @@ def refresh(db):
         added = sum(db.execute("INSERT OR IGNORE INTO lol_items (url, game, kind, title, ts, summary) VALUES (?,?,?,?,?,?)",
                                (a["url"], a["game"], a["kind"], a["title"], a["ts"], a["summary"])).rowcount
                     for a in chosen.values())
+        prune(db)
 
     def load(row):
         url, game, details = row
@@ -269,14 +284,14 @@ def refresh(db):
         """SELECT url, game, details, parsed FROM lol_items WHERE kind = 'patch' AND
            (parsed = 0 OR details IS NULL OR details NOT LIKE '%"site_icon"%'
             OR (details LIKE '%"inferred"%' AND ts > ?))""", (recent,))]
-    with ThreadPoolExecutor(6) as pool, db:
-        for url, entries, other in pool.map(load, todo):
+    with ThreadPoolExecutor(6) as pool:  # network first, no lock held
+        results = list(pool.map(load, todo))
+    with db:
+        for url, entries, other in results:
             if entries is None:
                 continue
-            names = lambda kind: [e["name"] for e in entries if e["kind"] == kind]
-            db.execute("UPDATE lol_items SET champions = ?, items = ?, details = ?, other = COALESCE(?, other), parsed = 1 WHERE url = ?",
-                       (json.dumps(names("champions")), json.dumps(names("items")), json.dumps(entries),
-                        json.dumps(other) if other is not None else None, url))
+            db.execute("UPDATE lol_items SET details = ?, other = COALESCE(?, other), parsed = 1 WHERE url = ?",
+                       (json.dumps(entries), json.dumps(other) if other is not None else None, url))
     return added
 
 
@@ -285,9 +300,8 @@ def rows(db):
     out = {g: {"patches": [], "champions": []} for g in SOURCES}
     row = db.execute("SELECT value FROM meta WHERE key = 'icons'").fetchone()
     icons = json.loads(row["value"]) if row else {}
-    for r in db.execute("SELECT * FROM lol_items ORDER BY ts DESC"):
-        d = {**dict(r), "champions": json.loads(r["champions"]), "items": json.loads(r["items"]),
-             "details": json.loads(r["details"] or "[]"), "other": json.loads(r["other"] or "[]"),
+    for r in db.execute("SELECT url, game, kind, title, ts, summary, parsed, details, other FROM lol_items ORDER BY ts DESC"):
+        d = {**dict(r), "details": json.loads(r["details"] or "[]"), "other": json.loads(r["other"] or "[]"),
              "labels_url": labels_url(r["game"], r["url"]) if r["kind"] == "patch" else None}
         for e in d["details"]:
             e["kind"], e["icon"] = _icon(icons, e["kind"], e["name"])

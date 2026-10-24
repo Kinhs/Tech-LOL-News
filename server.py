@@ -4,6 +4,7 @@ import re
 import sys
 import threading
 import time
+import urllib.request
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
@@ -40,14 +41,22 @@ def do_refresh():
         refresh_lock.release()
 
 
-def auto_refresh():
-    every = cfg.get("refresh_minutes", 30) * 60
-    while True:
-        db = news.connect()
+def refresh_if_due():
+    db = news.connect()
+    try:
         row = db.execute("SELECT value FROM meta WHERE key = 'last_refresh'").fetchone()
+    finally:
         db.close()
-        if time.time() - float(row["value"] if row else 0) >= every:
-            do_refresh()
+    if time.time() - float(row["value"] if row else 0) >= cfg.get("refresh_minutes", 30) * 60:
+        do_refresh()
+
+
+def auto_refresh():
+    while True:
+        try:
+            refresh_if_due()
+        except Exception as e:  # one bad feed entry or config typo must not end all future refreshes
+            print(f"warn: auto refresh: {e}", file=sys.stderr)
         time.sleep(60)
 
 
@@ -133,7 +142,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(400, {"error": "bad days"})
             db = news.connect()
             try:
-                rows = db.execute("SELECT * FROM items WHERE ts >= ? ORDER BY ts DESC LIMIT 3000",
+                rows = db.execute("SELECT * FROM items WHERE ts >= ? ORDER BY ts DESC LIMIT 10000",
                                   (time.time() - days * 86400,)).fetchall()
                 last = db.execute("SELECT value FROM meta WHERE key = 'last_refresh'").fetchone()
             finally:
@@ -151,7 +160,7 @@ class Handler(BaseHTTPRequestHandler):
         if not self.allowed():
             return
         try:
-            length = min(int(self.headers.get("Content-Length") or 0), 10_000)
+            length = max(0, min(int(self.headers.get("Content-Length") or 0), 10_000))  # a negative length would make read() wait for EOF
             body = json.loads(self.rfile.read(length) or b"{}")
             if not isinstance(body, dict):
                 raise ValueError
@@ -159,7 +168,11 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(400, {"error": "bad json"})
         path = urlparse(self.path).path
         if path == "/api/refresh":
-            n = do_refresh()
+            try:
+                n = do_refresh()
+            except Exception as e:
+                print(f"warn: refresh: {e}", file=sys.stderr)
+                return self.send(500, {"error": str(e)})
             self.send(200, {"busy": True} if n is None else {"new": n})
         elif path == "/api/mark":
             url = body.get("url")
@@ -177,12 +190,23 @@ class Handler(BaseHTTPRequestHandler):
             self.send(404, {"error": "not found"})
 
 
+def is_ours(port=PORT):
+    """True if the program answering on this port is this app (not some other server)."""
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/lol", timeout=3) as r:
+            return b"League News" in r.read(4000)
+    except OSError:
+        return False
+
+
 def main():
     try:
         server = ThreadingHTTPServer((HOST, PORT), Handler)
-    except OSError:  # already running (e.g. launcher clicked twice): just show the page
-        webbrowser.open(f"http://localhost:{PORT}")
-        return
+    except OSError:
+        if is_ours():  # already running (launcher clicked twice): just show the page
+            webbrowser.open(f"http://localhost:{PORT}")
+            return
+        sys.exit(f"Port {PORT} is used by another program. Close it, then start this again.")
     threading.Thread(target=auto_refresh, daemon=True).start()
     threading.Thread(target=watchdog, args=(server,), daemon=True).start()
     url = f"http://localhost:{PORT}"

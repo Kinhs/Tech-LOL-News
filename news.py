@@ -25,9 +25,12 @@ def load_cfg():
     return tomllib.loads((ROOT / "feeds.toml").read_text(encoding="utf-8"))  # explicit: Windows defaults to cp1252
 
 
-def connect():
-    db = sqlite3.connect(ROOT / "news.db", timeout=15)
-    db.row_factory = sqlite3.Row
+DB_PATH = ROOT / "news.db"
+_ready = False
+
+
+def init_db():
+    db = sqlite3.connect(DB_PATH, timeout=15)
     db.execute("PRAGMA journal_mode=WAL")
     db.executescript("""
         CREATE TABLE IF NOT EXISTS items (
@@ -36,13 +39,23 @@ def connect():
         CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
         CREATE TABLE IF NOT EXISTS lol_items (
             url TEXT PRIMARY KEY, game TEXT, kind TEXT, title TEXT, ts REAL, summary TEXT,
-            champions TEXT DEFAULT '[]', items TEXT DEFAULT '[]', parsed INTEGER DEFAULT 0,
-            details TEXT, other TEXT);
+            parsed INTEGER DEFAULT 0, details TEXT, other TEXT);
     """)
-    have = {r["name"] for r in db.execute("PRAGMA table_info(lol_items)")}
+    have = {r[1] for r in db.execute("PRAGMA table_info(lol_items)")}
     for col in ("details", "other"):  # databases created before these columns existed
         if col not in have:
             db.execute(f"ALTER TABLE lol_items ADD COLUMN {col} TEXT")
+    db.commit()
+    db.close()
+
+
+def connect():
+    global _ready
+    if not _ready:
+        init_db()
+        _ready = True
+    db = sqlite3.connect(DB_PATH, timeout=15)
+    db.row_factory = sqlite3.Row
     return db
 
 
@@ -83,18 +96,33 @@ def parse_feed(data):
     return [(" ".join(t.split()), l.strip(), ts, _clean(s)) for t, l, ts, s in out if l.strip()]
 
 
+def compile_topics(topics):
+    """[(topic, regex)]: one whole-word regex per topic. A topic with no keywords never matches."""
+    return [(name, re.compile(r"(?<!\w)(?:" + "|".join(re.escape(w.lower()) for w in words) + r")(?!\w)"))
+            for name, words in topics.items() if words]
+
+
 def tag(text, default, topics):
-    """Every topic with a whole-word keyword hit in text; the feed's default topic if none."""
+    """Every topic with a keyword hit in text; the feed's default topic if none. topics: dict or compile_topics()."""
+    compiled = compile_topics(topics) if isinstance(topics, dict) else topics
     text = text.lower()
-    hits = [name for name, words in topics.items()
-            if any(re.search(rf"(?<!\w){re.escape(w.lower())}(?!\w)", text) for w in words)]
-    return hits or [default]
+    return [name for name, rx in compiled if rx.search(text)] or [default]
 
 
-def fetch(url):
+def fetch(url, limit=8_000_000, total=60):
+    """GET url. The 20 s timeout only covers each wait, so also stop at `limit` bytes or `total` seconds
+    (a server that drips one byte at a time would otherwise hold a refresh for ever)."""
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    end, chunks, size = time.monotonic() + total, [], 0
     with urllib.request.urlopen(req, timeout=20) as resp:
-        return resp.read()
+        while chunk := resp.read1(65536):  # read1: return what has arrived, so the deadline is checked while data drips in
+            size += len(chunk)
+            if size > limit:
+                raise ValueError(f"response over {limit} bytes: {url}")
+            if time.monotonic() > end:
+                raise TimeoutError(f"download took over {total} s: {url}")
+            chunks.append(chunk)
+    return b"".join(chunks)
 
 
 def _load_feed(feed):
@@ -111,18 +139,20 @@ def refresh(db, cfg):
     cutoff = now - cfg.get("keep_days", 30) * 86400
     with ThreadPoolExecutor(8) as pool:
         results = list(pool.map(_load_feed, cfg["feeds"]))
+    topics = compile_topics(cfg["topics"])
+    known = {r[0] for r in db.execute("SELECT url FROM items")}  # no point tagging what is already stored
     new = []
-    with db:
-        for feed, entries in results:
-            for title, url, ts, summary in entries:
-                ts = ts or now
-                if ts < cutoff:
-                    continue
-                tags = tag(f"{title} {summary}", feed["topic"], cfg["topics"])
-                cur = db.execute("INSERT OR IGNORE INTO items (url, title, summary, source, ts, tags) VALUES (?,?,?,?,?,?)",
-                                 (url, title, summary, feed["name"], ts, json.dumps(tags)))
-                if cur.rowcount:
-                    new.append({"title": title, "url": url, "ts": ts, "source": feed["name"], "tags": tags})
+    for feed, entries in results:
+        for title, url, ts, summary in entries:
+            ts = min(ts or now, now)  # a feed that dates a story in the future must not pin it to the top
+            if ts < cutoff or url in known:
+                continue
+            known.add(url)
+            new.append({"title": title, "url": url, "ts": ts, "source": feed["name"], "summary": summary,
+                        "tags": tag(f"{title} {summary}", feed["topic"], topics)})
+    with db:  # the write lock is held only for these statements, never while fetching or tagging
+        db.executemany("INSERT OR IGNORE INTO items (url, title, summary, source, ts, tags) VALUES (?,?,?,?,?,?)",
+                       [(i["url"], i["title"], i["summary"], i["source"], i["ts"], json.dumps(i["tags"])) for i in new])
         db.execute("DELETE FROM items WHERE ts < ? AND starred = 0", (cutoff,))
         db.execute("INSERT OR REPLACE INTO meta VALUES ('last_refresh', ?)", (str(now),))
     try:
@@ -138,10 +168,11 @@ def icon_slug(name):
 
 def icon_files(cfg):
     """{source name: file name} for the favicons cached so far."""
+    present = {p.name for p in ICONS.iterdir()} if ICONS.is_dir() else set()
     out = {}
     for feed in cfg["feeds"]:
         slug = icon_slug(feed["name"])
-        found = next((f"{slug}.{ext}" for _, ext in IMAGE_TYPES if (ICONS / f"{slug}.{ext}").exists()), None)
+        found = next((f"{slug}.{ext}" for _, ext in IMAGE_TYPES if f"{slug}.{ext}" in present), None)
         if found:
             out[feed["name"]] = found
     return out
@@ -162,7 +193,7 @@ def _find_icon(feed):
         urls.append(base + "favicon.ico")
     for url in urls:
         try:
-            data = fetch(url)
+            data = fetch(url, limit=300_000)
         except Exception:
             continue
         ext = next((e for magic, e in IMAGE_TYPES if data.startswith(magic)), None)
